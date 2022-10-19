@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FlatList, Alert, Keyboard } from "react-native";
 import { Container, Form, Wrapped, ContainerList, Separator } from "./styles";
 
@@ -9,37 +9,37 @@ import { CreatedOrCompleted } from "@components/createdOrCompleted";
 import { TaskCard } from "@components/TaskCard";
 import { ListEmpty } from "@components/ListEmpty";
 
+import { taskCreate } from "@storage/task/taskCreate";
+import { taskGetAll } from "@storage/task/taskGetAll";
+import { taskRemove } from "@storage/task/taskRemove";
+
 export function Home() {
   const [task, setTask] = useState<string[]>([]);
   const [newTask, setNewTask] = useState("");
   const [count, setCount] = useState<number>(0);
 
-
-  function handleNewTask() {
+  async function handleNewTask() {
     if (newTask.trim().length === 0) {
       return Alert.alert("Nova Tarefa", "Digite uma nova tarefa");
     }
 
-    setTask((prevState) => [...prevState, newTask]);
+    await taskCreate(newTask);
     setNewTask("");
     Keyboard.dismiss();
   }
 
-  function removeTask(item: string) {
-    if(count !== 0) {
-      setCount(count - 1)
+  async function removeTask(item: string) {
+    if (count !== 0) {
+      setCount(count - 1);
     }
-    
-    setTask((prevState) => prevState.filter((task) => task !== item))
-    
+    await taskRemove(item)
   }
 
   function handleRemoveTask(item: string) {
     Alert.alert("Remover", "Deseja remover essa tarefa?", [
       {
         text: "Sim",
-        onPress: () => removeTask(item)
-          
+        onPress: () => removeTask(item),
       },
       {
         text: "Não",
@@ -47,7 +47,15 @@ export function Home() {
       },
     ]);
   }
-  
+
+  async function fetchTasks() {
+    const data = await taskGetAll();
+    setTask(data);
+  }
+
+  useEffect(() => {
+    fetchTasks();
+  }, [task]);
 
   return (
     <Container>
@@ -69,8 +77,8 @@ export function Home() {
           type="Created"
         />
 
-        <CreatedOrCompleted 
-          title="Concluídas" 
+        <CreatedOrCompleted
+          title="Concluídas"
           number={count}
           type="Completed"
         />
